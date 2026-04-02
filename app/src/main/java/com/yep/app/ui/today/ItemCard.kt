@@ -41,18 +41,14 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yep.app.data.entities.Confirmation
 import com.yep.app.data.entities.Item
-import com.yep.app.ui.theme.BorderGray
-import com.yep.app.ui.theme.Charcoal
-import com.yep.app.ui.theme.GreenDark
-import com.yep.app.ui.theme.GreenDarkest
 import com.yep.app.ui.theme.GreenPrimary
-import com.yep.app.ui.theme.Mint
 import com.yep.app.ui.theme.NeutralGray
 import com.yep.app.util.DateUtils
 
@@ -69,18 +65,23 @@ fun ItemCard(
     onUncheck: () -> Unit = {},
     onViewPhoto: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val isConfirmed = confirmation != null
     val hasPhoto = confirmation?.photoPath != null
     val cardShape = RoundedCornerShape(16.dp)
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (isConfirmed) Mint else MaterialTheme.colorScheme.surface,
+        targetValue = if (isConfirmed) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         animationSpec = tween(200),
         label = "cardBg"
     )
 
+    val confirmedTextColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val confirmedSubtextColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+    val outlineColor = MaterialTheme.colorScheme.outline
+
     val stateDesc = when {
-        isConfirmed -> "Confirmed at ${DateUtils.formatTime(confirmation!!.confirmedAt)}"
+        isConfirmed -> "Confirmed at ${DateUtils.formatTime(context, confirmation!!.confirmedAt)}"
         isExpanded -> "Expanded, choose action"
         else -> "Not yet confirmed"
     }
@@ -93,7 +94,7 @@ fun ItemCard(
             .then(
                 when {
                     isExpanded && !isConfirmed -> Modifier.border(2.dp, GreenPrimary, cardShape)
-                    !isConfirmed -> Modifier.dashedBorder(BorderGray, 16.dp)
+                    !isConfirmed -> Modifier.dashedBorder(outlineColor, 16.dp)
                     else -> Modifier
                 }
             )
@@ -112,7 +113,7 @@ fun ItemCard(
                 Text(
                     text = item.label,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (isConfirmed) GreenDarkest else Charcoal
+                    color = if (isConfirmed) confirmedTextColor else MaterialTheme.colorScheme.onSurface
                 )
                 if (isConfirmed) {
                     Row(
@@ -120,9 +121,9 @@ fun ItemCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "Yep — ${DateUtils.formatTime(confirmation!!.confirmedAt)}",
+                            text = "Yep — ${DateUtils.formatTime(context, confirmation!!.confirmedAt)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = GreenDark
+                            color = confirmedSubtextColor
                         )
                         if (hasPhoto) {
                             Surface(
@@ -132,7 +133,7 @@ fun ItemCard(
                                 Text(
                                     text = "photo",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = GreenDark,
+                                    color = confirmedSubtextColor,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -187,7 +188,7 @@ fun ItemCard(
                         .size(24.dp)
                         .border(
                             1.5.dp,
-                            if (isExpanded) GreenPrimary else BorderGray,
+                            if (isExpanded) GreenPrimary else outlineColor,
                             CircleShape
                         )
                 )
@@ -227,8 +228,8 @@ fun ItemCard(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Mint,
-                        contentColor = GreenDarkest
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 ) {
                     Icon(

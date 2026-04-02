@@ -16,8 +16,8 @@ val GreenDark = Color(0xFF0F6E56)
 val GreenDarkest = Color(0xFF085041)
 
 // Dark mode
-val DarkBackground = Color(0xFF2C2C2A)
-val DarkSurface = Color(0xFF3A3A37)
+val DarkBackground = Color(0xFF121212)
+val DarkSurface = Color(0xFF1E1E1E)
 val DarkTextPrimary = Color(0xFFF1EFE8)
 val DarkTextSecondary = Color(0xFF888780)
-val DarkBorder = Color(0xFF444441)
+val DarkBorder = Color(0xFF2A2A2A)

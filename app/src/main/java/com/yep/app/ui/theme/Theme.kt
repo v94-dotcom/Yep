@@ -17,22 +17,30 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Charcoal,
     surface = Surface,
     onSurface = Charcoal,
+    surfaceVariant = WarmGrayLight,
+    onSurfaceVariant = NeutralGray,
+    surfaceContainer = Surface,
     outline = BorderGray,
+    outlineVariant = BorderGray,
     error = DangerRed,
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = GreenLight,
     onPrimary = DarkBackground,
-    primaryContainer = GreenDark,
-    onPrimaryContainer = Mint,
+    primaryContainer = GreenPrimary.copy(alpha = 0.18f),
+    onPrimaryContainer = GreenLight,
     secondary = GreenPrimary,
     onSecondary = DarkBackground,
     background = DarkBackground,
     onBackground = DarkTextPrimary,
     surface = DarkSurface,
     onSurface = DarkTextPrimary,
+    surfaceVariant = DarkSurface,
+    onSurfaceVariant = DarkTextSecondary,
+    surfaceContainer = DarkBackground,
     outline = DarkBorder,
+    outlineVariant = DarkBorder,
     error = DangerRed,
 )
 

@@ -32,15 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.yep.app.ui.theme.BorderGray
-import com.yep.app.ui.theme.Charcoal
-import com.yep.app.ui.theme.GreenDark
-import com.yep.app.ui.theme.GreenDarkest
 import com.yep.app.ui.theme.GreenPrimary
-import com.yep.app.ui.theme.Mint
 import com.yep.app.ui.theme.NeutralGray
-import com.yep.app.ui.theme.Surface
-import com.yep.app.ui.theme.WarmGrayLight
 
 @Composable
 fun StreaksScreen(
@@ -51,7 +44,7 @@ fun StreaksScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Surface)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -61,7 +54,7 @@ fun StreaksScreen(
             text = "Streaks",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.SemiBold,
-                color = Charcoal
+                color = MaterialTheme.colorScheme.onBackground
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -77,7 +70,7 @@ fun StreaksScreen(
             text = "Current streak",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold,
-                color = Charcoal
+                color = MaterialTheme.colorScheme.onBackground
             )
         )
 
@@ -130,7 +123,7 @@ private fun StreakCircle(streak: Int) {
         modifier = Modifier
             .size(160.dp)
             .clip(CircleShape)
-            .background(if (streak > 0) GreenPrimary else WarmGrayLight),
+            .background(if (streak > 0) GreenPrimary else MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -162,13 +155,13 @@ private fun StatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             Column {
@@ -185,7 +178,7 @@ private fun StatCard(
                         text = value,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            color = Charcoal
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     )
                     Text(
@@ -206,13 +199,13 @@ private fun WeekRow(dots: List<Boolean>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Column {
@@ -238,7 +231,7 @@ private fun WeekRow(dots: List<Boolean>) {
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(if (complete) GreenPrimary else WarmGrayLight),
+                                    .background(if (complete) GreenPrimary else MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (complete) {

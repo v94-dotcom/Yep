@@ -29,14 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yep.app.data.entities.Item
-import com.yep.app.ui.theme.BorderGray
-import com.yep.app.ui.theme.Charcoal
-import com.yep.app.ui.theme.GreenDark
-import com.yep.app.ui.theme.GreenDarkest
 import com.yep.app.ui.theme.GreenPrimary
-import com.yep.app.ui.theme.Mint
 import com.yep.app.ui.theme.NeutralGray
-import com.yep.app.ui.theme.Surface as AppSurface
 import com.yep.app.util.DateUtils
 
 @Composable
@@ -50,13 +44,13 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppSurface)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
         Text(
             text = "History",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = Charcoal,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)
         )
 
@@ -90,26 +84,26 @@ private fun TodaySummaryCard(day: HistoryDay, items: List<Item>) {
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Mint,
+        color = MaterialTheme.colorScheme.primaryContainer,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Today — ${DateUtils.formatHistoryDate(day.date)}",
                 style = MaterialTheme.typography.labelMedium,
-                color = GreenDark
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = "$confirmedCount of $total confirmed",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = GreenDarkest
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             if (total > 0) {
                 Text(
                     text = "$percentage% complete",
                     style = MaterialTheme.typography.bodySmall,
-                    color = GreenDark
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -129,7 +123,7 @@ private fun HistoryDayCard(day: HistoryDay, items: List<Item>) {
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -140,7 +134,7 @@ private fun HistoryDayCard(day: HistoryDay, items: List<Item>) {
                 Text(
                     text = DateUtils.formatHistoryDate(day.date),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = Charcoal
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (isAllClear) {
                     Text(
@@ -172,7 +166,7 @@ private fun DotRow(confirmedItemIds: Set<String>, items: List<Item>) {
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (confirmed) GreenPrimary else BorderGray)
+                    .background(if (confirmed) GreenPrimary else MaterialTheme.colorScheme.outline)
             )
         }
     }

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ fun PhotoViewerScreen(
     confirmedAt: Long,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -63,7 +65,7 @@ fun PhotoViewerScreen(
                 )
             }
             Text(
-                text = "$itemLabel · ${DateUtils.formatTime(confirmedAt)}",
+                text = "$itemLabel · ${DateUtils.formatTime(context, confirmedAt)}",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = Color.White,
@@ -101,7 +103,7 @@ fun PhotoViewerScreen(
                     .padding(8.dp)
             ) {
                 Text(
-                    text = DateUtils.formatTime(confirmedAt),
+                    text = DateUtils.formatTime(context, confirmedAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

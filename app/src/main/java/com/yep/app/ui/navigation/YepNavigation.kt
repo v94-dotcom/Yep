@@ -1,6 +1,7 @@
 package com.yep.app.ui.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,16 +10,19 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -31,6 +35,8 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import com.yep.app.ui.camera.CameraScreen
 import com.yep.app.ui.history.HistoryScreen
+import com.yep.app.ui.onboarding.OnboardingScreen
+import com.yep.app.ui.onboarding.OnboardingViewModel
 import com.yep.app.ui.photo.PhotoViewerScreen
 import com.yep.app.ui.streaks.StreaksScreen
 import com.yep.app.ui.today.TodayScreen
@@ -50,6 +56,18 @@ private const val PHOTO_ROUTE = "photo?photoPath={photoPath}&itemLabel={itemLabe
 
 @Composable
 fun YepNavigation() {
+    val onboardingVm: OnboardingViewModel = hiltViewModel()
+    val onboardingComplete by onboardingVm.onboardingComplete.collectAsState()
+
+    when (onboardingComplete) {
+        null  -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        false -> OnboardingScreen(viewModel = onboardingVm)
+        true  -> YepApp()
+    }
+}
+
+@Composable
+private fun YepApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

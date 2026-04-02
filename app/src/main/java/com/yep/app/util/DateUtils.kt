@@ -1,5 +1,6 @@
 package com.yep.app.util
 
+import android.content.Context
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -8,13 +9,13 @@ import java.util.Locale
 object DateUtils {
     private val storageFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val displayFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
-    private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
 
     fun today(): String = storageFormat.format(Date())
 
     fun todayDisplay(): String = displayFormat.format(Date())
 
-    fun formatTime(millis: Long): String = timeFormat.format(Date(millis))
+    fun formatTime(context: Context, millis: Long): String =
+        android.text.format.DateFormat.getTimeFormat(context).format(Date(millis))
 
     fun daysAgo(days: Int): String {
         val cal = Calendar.getInstance()
