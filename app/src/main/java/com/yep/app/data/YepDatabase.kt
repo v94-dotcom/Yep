@@ -6,7 +6,7 @@ import com.yep.app.data.entities.*
 
 @Database(
     entities = [Item::class, Confirmation::class, UserSettings::class, StreakData::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class YepDatabase : RoomDatabase() {
