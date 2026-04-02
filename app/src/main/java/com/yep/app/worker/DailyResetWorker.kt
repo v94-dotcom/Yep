@@ -10,6 +10,7 @@ import com.yep.app.data.entities.StreakData
 import com.yep.app.data.repository.YepRepository
 import com.yep.app.util.DateUtils
 import com.yep.app.util.PhotoManager
+import android.content.Context.MODE_PRIVATE
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -32,6 +33,8 @@ class DailyResetWorker(
         val repo = EntryPointAccessors.fromApplication(appContext, DailyResetEntryPoint::class.java)
             .repository()
         doReset(repo, appContext)
+        appContext.getSharedPreferences("yep_prefs", MODE_PRIVATE)
+            .edit().putString("last_reset_date", DateUtils.today()).apply()
         return Result.success()
     }
 

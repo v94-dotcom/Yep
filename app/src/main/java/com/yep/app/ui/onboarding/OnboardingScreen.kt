@@ -1,5 +1,7 @@
 package com.yep.app.ui.onboarding
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -31,16 +33,28 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +65,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.yep.app.ui.theme.GreenDarkest
 import com.yep.app.ui.theme.GreenPrimary
 import com.yep.app.ui.theme.Mint
@@ -61,6 +78,8 @@ fun OnboardingScreen(viewModel: OnboardingViewModel) {
     val pagerState = rememberPagerState(pageCount = { 3 })
     val selectedLabels by viewModel.selectedLabels.collectAsState()
     val customText by viewModel.customText.collectAsState()
+    val reminderEnabled by viewModel.reminderEnabled.collectAsState()
+    val reminderTime by viewModel.reminderTime.collectAsState()
     val focusManager = LocalFocusManager.current
     val isLastPage = pagerState.currentPage == 2
 
@@ -81,7 +100,11 @@ fun OnboardingScreen(viewModel: OnboardingViewModel) {
                     selectedLabels = selectedLabels,
                     customText = customText,
                     onToggle = viewModel::toggleSuggestion,
-                    onCustomTextChange = viewModel::setCustomText
+                    onCustomTextChange = viewModel::setCustomText,
+                    reminderEnabled = reminderEnabled,
+                    reminderTime = reminderTime,
+                    onReminderEnabledChange = viewModel::setReminderEnabled,
+                    onReminderTimeChange = viewModel::setReminderTime
                 )
             }
         }
@@ -272,14 +295,55 @@ private fun DemoItemCard() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 private fun OnboardingPage3(
     selectedLabels: Set<String>,
     customText: String,
     onToggle: (String) -> Unit,
-    onCustomTextChange: (String) -> Unit
+    onCustomTextChange: (String) -> Unit,
+    reminderEnabled: Boolean,
+    reminderTime: String,
+    onReminderEnabledChange: (Boolean) -> Unit,
+    onReminderTimeChange: (String) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    val notifPermission = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
+    // On API < 33 the permission doesn't exist — treat as already granted
+    val notifGranted = notifPermission.status.isGranted || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+    // When permission arrives after launchPermissionRequest(), enable the reminder
+    var pendingEnable by remember { mutableStateOf(false) }
+    LaunchedEffect(notifPermission.status) {
+        if (pendingEnable && notifPermission.status.isGranted) {
+            onReminderEnabledChange(true)
+            pendingEnable = false
+        }
+    }
+
+    if (showTimePicker) {
+        val parts = reminderTime.split(":")
+        val timePickerState = rememberTimePickerState(
+            initialHour = parts[0].toInt(),
+            initialMinute = parts[1].toInt(),
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newTime = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                    onReminderTimeChange(newTime)
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+            text = { TimePicker(state = timePickerState) }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -329,6 +393,69 @@ private fun OnboardingPage3(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Gentle reminder?",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(
+                checked = reminderEnabled,
+                onCheckedChange = { enabled ->
+                    if (!enabled) {
+                        onReminderEnabledChange(false)
+                    } else if (notifGranted) {
+                        onReminderEnabledChange(true)
+                    } else {
+                        pendingEnable = true
+                        notifPermission.launchPermissionRequest()
+                    }
+                },
+                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = GreenPrimary)
+            )
+        }
+
+        AnimatedVisibility(visible = reminderEnabled) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { showTimePicker = true }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Schedule,
+                    contentDescription = null,
+                    tint = GreenPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Remind me at",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = reminderTime,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = GreenPrimary
+                )
+            }
+        }
     }
 }
 

@@ -1,11 +1,14 @@
 package com.yep.app.ui.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yep.app.data.entities.Item
 import com.yep.app.data.entities.UserSettings
 import com.yep.app.data.repository.YepRepository
+import com.yep.app.util.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +21,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val repository: YepRepository
+    private val repository: YepRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     // null = loading, false = needs onboarding, true = done
@@ -32,12 +36,26 @@ class OnboardingViewModel @Inject constructor(
     private val _customText = MutableStateFlow("")
     val customText: StateFlow<String> = _customText.asStateFlow()
 
+    private val _reminderEnabled = MutableStateFlow(false)
+    val reminderEnabled: StateFlow<Boolean> = _reminderEnabled.asStateFlow()
+
+    private val _reminderTime = MutableStateFlow("08:30")
+    val reminderTime: StateFlow<String> = _reminderTime.asStateFlow()
+
     fun toggleSuggestion(label: String) {
         _selectedLabels.update { if (label in it) it - label else it + label }
     }
 
     fun setCustomText(text: String) {
         _customText.value = text
+    }
+
+    fun setReminderEnabled(enabled: Boolean) {
+        _reminderEnabled.value = enabled
+    }
+
+    fun setReminderTime(time: String) {
+        _reminderTime.value = time
     }
 
     fun completeOnboarding() {
@@ -50,7 +68,16 @@ class OnboardingViewModel @Inject constructor(
                 repository.insertItem(Item(label = label, sortOrder = i))
             }
             // Insert items BEFORE marking complete so a process kill leaves things consistent
-            repository.saveSettings(UserSettings(onboardingComplete = true))
+            repository.saveSettings(
+                UserSettings(
+                    onboardingComplete = true,
+                    reminderEnabled = _reminderEnabled.value,
+                    reminderTime = _reminderTime.value
+                )
+            )
+            if (_reminderEnabled.value) {
+                NotificationHelper.scheduleReminder(context, _reminderTime.value)
+            }
         }
     }
 
