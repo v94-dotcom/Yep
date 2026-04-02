@@ -22,6 +22,20 @@ object DateUtils {
         return storageFormat.format(cal.time)
     }
 
+    fun yesterday(): String = daysAgo(1)
+
+    fun millisUntilMidnight(): Long {
+        val now = Calendar.getInstance()
+        val midnight = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return midnight.timeInMillis - now.timeInMillis
+    }
+
     fun formatHistoryDate(dateStr: String): String {
         return try {
             val date = storageFormat.parse(dateStr) ?: return dateStr
