@@ -1,7 +1,5 @@
 package com.yep.app.ui.today
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,12 +24,15 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,11 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -53,17 +53,19 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yep.app.data.entities.Item
+import com.yep.app.ui.settings.SettingsScreen
 import com.yep.app.ui.theme.GreenPrimary
 import com.yep.app.ui.theme.NeutralGray
 import com.yep.app.util.DateUtils
+import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
     onNavigateToCamera: (itemId: String, itemLabel: String) -> Unit = { _, _ -> },
     onNavigateToPhoto: (photoPath: String, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
-    onNavigateToSettings: () -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel()
 ) {
     val items by viewModel.items.collectAsState()
@@ -77,6 +79,9 @@ fun TodayScreen(
     var newItemText by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val addFieldFocus = remember { FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    var showSettings by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Local mutable list drives the LazyColumn so drags are instant.
     // Synced from DB whenever we're not mid-drag.
@@ -100,6 +105,15 @@ fun TodayScreen(
             viewModel.addItem(newItemText)
             newItemText = ""
             focusManager.clearFocus()
+        }
+    }
+
+    if (showSettings) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettings = false },
+            sheetState = sheetState
+        ) {
+            SettingsScreen()
         }
     }
 
@@ -138,7 +152,7 @@ fun TodayScreen(
                 }
                 Spacer(modifier = Modifier.width(4.dp))
             }
-            IconButton(onClick = onNavigateToSettings) {
+            IconButton(onClick = { showSettings = true }) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
@@ -176,25 +190,17 @@ fun TodayScreen(
                     reorderState,
                     key = item.id,
                     modifier = Modifier.animateItem()
-                ) { isDragging ->
-                    val scale by animateFloatAsState(
-                        targetValue = if (isDragging) 1.03f else 1f,
-                        label = "dragScale"
-                    )
-                    val elevation by animateDpAsState(
-                        targetValue = if (isDragging) 8.dp else 0.dp,
-                        label = "dragElevation"
-                    )
+                ) { _ ->
                     val confirmation = confirmations.find { it.itemId == item.id }
                     Box(
                         modifier = Modifier
-                            .shadow(elevation, RoundedCornerShape(16.dp))
-                            .scale(scale)
                             .longPressDraggableHandle(
                                 onDragStarted = { isDraggingAny = true },
                                 onDragStopped = {
-                                    isDraggingAny = false
-                                    viewModel.reorderItems(localItems.toList())
+                                    coroutineScope.launch {
+                                        viewModel.reorderItems(localItems.toList())
+                                        isDraggingAny = false
+                                    }
                                 }
                             )
                     ) {

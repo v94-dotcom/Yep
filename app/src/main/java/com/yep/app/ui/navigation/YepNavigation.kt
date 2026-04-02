@@ -38,7 +38,6 @@ import com.yep.app.ui.history.HistoryScreen
 import com.yep.app.ui.onboarding.OnboardingScreen
 import com.yep.app.ui.onboarding.OnboardingViewModel
 import com.yep.app.ui.photo.PhotoViewerScreen
-import com.yep.app.ui.settings.SettingsScreen
 import com.yep.app.ui.streaks.StreaksScreen
 import com.yep.app.ui.today.TodayScreen
 import com.yep.app.ui.theme.GreenPrimary
@@ -54,7 +53,6 @@ val bottomNavItems = listOf(Screen.Today, Screen.History, Screen.Streaks)
 
 private const val CAMERA_ROUTE = "camera/{itemId}/{itemLabel}"
 private const val PHOTO_ROUTE = "photo?photoPath={photoPath}&itemLabel={itemLabel}&confirmedAt={confirmedAt}"
-private const val SETTINGS_ROUTE = "settings"
 
 @Composable
 fun YepNavigation() {
@@ -75,7 +73,6 @@ private fun YepApp() {
     val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute?.startsWith("camera/") != true
             && currentRoute?.startsWith("photo") != true
-            && currentRoute != SETTINGS_ROUTE
 
     Scaffold(
         bottomBar = {
@@ -131,14 +128,8 @@ private fun YepApp() {
                                     "&itemLabel=${Uri.encode(itemLabel)}" +
                                     "&confirmedAt=$confirmedAt"
                         )
-                    },
-                    onNavigateToSettings = {
-                        navController.navigate(SETTINGS_ROUTE)
                     }
                 )
-            }
-            composable(SETTINGS_ROUTE) {
-                SettingsScreen(onNavigateBack = { navController.popBackStack() })
             }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Streaks.route) { StreaksScreen() }

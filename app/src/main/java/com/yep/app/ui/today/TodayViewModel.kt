@@ -64,11 +64,9 @@ class TodayViewModel @Inject constructor(
         viewModelScope.launch { repository.deleteItem(item) }
     }
 
-    fun reorderItems(reorderedItems: List<Item>) {
-        viewModelScope.launch {
-            reorderedItems.forEachIndexed { index, item ->
-                repository.updateSortOrder(item.id, index)
-            }
+    suspend fun reorderItems(reorderedItems: List<Item>) {
+        reorderedItems.forEachIndexed { index, item ->
+            repository.updateSortOrder(item.id, index)
         }
     }
 
