@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -62,6 +63,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun TodayScreen(
     onNavigateToCamera: (itemId: String, itemLabel: String) -> Unit = { _, _ -> },
     onNavigateToPhoto: (photoPath: String, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
+    onNavigateToSettings: () -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel()
 ) {
     val items by viewModel.items.collectAsState()
@@ -135,6 +137,14 @@ fun TodayScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
+            }
+            IconButton(onClick = onNavigateToSettings) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = NeutralGray,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             IconButton(onClick = { viewModel.toggleEditMode() }) {
                 Icon(
