@@ -12,7 +12,7 @@ object PhotoManager {
     fun cleanupOldPhotos(context: Context) {
         val dir = File(context.filesDir, "photos")
         if (!dir.exists()) return
-        val cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        val cutoff = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
         dir.listFiles()?.forEach { if (it.lastModified() < cutoff) it.delete() }
     }
 }

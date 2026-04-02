@@ -39,6 +39,16 @@ interface YepDao {
     @Query("SELECT * FROM confirmations WHERE date >= :startDate")
     fun getConfirmationsSince(startDate: String): Flow<List<Confirmation>>
 
+    // Daily Item Snapshots
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDailyItemSnapshot(snapshot: DailyItemSnapshot)
+
+    @Query("SELECT * FROM daily_item_snapshots WHERE date >= :startDate")
+    fun getSnapshotsSince(startDate: String): Flow<List<DailyItemSnapshot>>
+
+    @Query("DELETE FROM daily_item_snapshots WHERE date < :date")
+    suspend fun deleteSnapshotsBeforeDate(date: String)
+
     // Settings
     @Query("SELECT * FROM settings WHERE id = 0")
     fun getSettings(): Flow<UserSettings?>

@@ -6,6 +6,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.yep.app.data.entities.DailyItemSnapshot
 import com.yep.app.data.entities.StreakData
 import com.yep.app.data.repository.YepRepository
 import com.yep.app.util.DateUtils
@@ -66,6 +67,13 @@ class DailyResetWorker(
 
             repo.deleteConfirmationsBeforeDate(DateUtils.daysAgo(30))
             PhotoManager.cleanupOldPhotos(context)
+
+            items.forEach { item ->
+                repo.insertDailyItemSnapshot(
+                    DailyItemSnapshot(date = yesterday, itemId = item.id, itemLabel = item.label)
+                )
+            }
+            repo.deleteSnapshotsBeforeDate(DateUtils.daysAgo(30))
         }
 
         fun schedule(context: Context) {

@@ -1,7 +1,11 @@
 package com.yep.app.data.repository
 
 import com.yep.app.data.YepDao
-import com.yep.app.data.entities.*
+import com.yep.app.data.entities.Confirmation
+import com.yep.app.data.entities.DailyItemSnapshot
+import com.yep.app.data.entities.Item
+import com.yep.app.data.entities.StreakData
+import com.yep.app.data.entities.UserSettings
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,6 +38,15 @@ class YepRepository @Inject constructor(private val dao: YepDao) {
 
     fun getConfirmationsSince(startDate: String): Flow<List<Confirmation>> =
         dao.getConfirmationsSince(startDate)
+
+    suspend fun insertDailyItemSnapshot(snapshot: DailyItemSnapshot) =
+        dao.insertDailyItemSnapshot(snapshot)
+
+    fun getSnapshotsSince(startDate: String): Flow<List<DailyItemSnapshot>> =
+        dao.getSnapshotsSince(startDate)
+
+    suspend fun deleteSnapshotsBeforeDate(date: String) =
+        dao.deleteSnapshotsBeforeDate(date)
 
     fun getSettings(): Flow<UserSettings?> = dao.getSettings()
 

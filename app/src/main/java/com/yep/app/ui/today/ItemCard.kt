@@ -2,6 +2,9 @@ package com.yep.app.ui.today
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,11 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
@@ -58,6 +65,7 @@ fun ItemCard(
     confirmation: Confirmation? = null,
     isExpanded: Boolean = false,
     isEditMode: Boolean = false,
+    dragHandleModifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     onConfirm: () -> Unit = {},
     onConfirmWithPhoto: () -> Unit = {},
@@ -66,9 +74,19 @@ fun ItemCard(
     onViewPhoto: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val isConfirmed = confirmation != null
     val hasPhoto = confirmation?.photoPath != null
     val cardShape = RoundedCornerShape(16.dp)
+
+    val checkScale by animateFloatAsState(
+        targetValue = if (isConfirmed) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "checkScale"
+    )
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isConfirmed) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
@@ -106,9 +124,25 @@ fun ItemCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(
+                    start = if (isEditMode) 12.dp else 16.dp,
+                    end = 16.dp,
+                    top = 14.dp,
+                    bottom = 14.dp
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isEditMode) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "Drag to reorder",
+                    tint = NeutralGray.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(dragHandleModifier)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.label,
@@ -171,6 +205,7 @@ fun ItemCard(
                 Box(
                     modifier = Modifier
                         .size(24.dp)
+                        .scale(checkScale)
                         .clip(CircleShape)
                         .background(GreenPrimary),
                     contentAlignment = Alignment.Center
@@ -207,7 +242,10 @@ fun ItemCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = onConfirm,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onConfirm()
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(

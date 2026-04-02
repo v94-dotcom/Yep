@@ -1,13 +1,22 @@
 package com.yep.app.ui.today
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -83,6 +93,27 @@ fun TodayScreen(
     var showSettings by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val shakeOffset = remember { Animatable(0f) }
+    var editButtonFlash by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.shakeEditHeader.collect {
+            editButtonFlash = true
+            repeat(4) { i ->
+                shakeOffset.animateTo(
+                    if (i % 2 == 0) 10f else -10f,
+                    spring(stiffness = Spring.StiffnessHigh)
+                )
+            }
+            shakeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+            editButtonFlash = false
+        }
+    }
+
+    BackHandler(enabled = isEditMode) {
+        viewModel.toggleEditMode()
+    }
+
     // Local mutable list drives the LazyColumn so drags are instant.
     // Synced from DB whenever we're not mid-drag.
     val localItems = remember { mutableStateListOf<Item>() }
@@ -95,6 +126,12 @@ fun TodayScreen(
         }
     }
 
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
+    LaunchedEffect(imeBottom) {
+        if (imeBottom == 0) focusManager.clearFocus()
+    }
+
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
         localItems.apply { add(to.index, removeAt(from.index)) }
@@ -104,8 +141,8 @@ fun TodayScreen(
         if (newItemText.isNotBlank()) {
             viewModel.addItem(newItemText)
             newItemText = ""
-            focusManager.clearFocus()
         }
+        focusManager.clearFocus()
     }
 
     if (showSettings) {
@@ -120,13 +157,16 @@ fun TodayScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .imePadding()
             .padding(horizontal = 16.dp)
     ) {
         // Header row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 20.dp),
+                .padding(top = 20.dp)
+                .offset(x = shakeOffset.value.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -152,11 +192,14 @@ fun TodayScreen(
                 }
                 Spacer(modifier = Modifier.width(4.dp))
             }
-            IconButton(onClick = { showSettings = true }) {
+            IconButton(
+                onClick = { showSettings = true },
+                enabled = !isEditMode
+            ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
-                    tint = NeutralGray,
+                    tint = if (isEditMode) NeutralGray.copy(alpha = 0.35f) else NeutralGray,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -164,7 +207,11 @@ fun TodayScreen(
                 Icon(
                     imageVector = if (isEditMode) Icons.Default.Done else Icons.Default.Edit,
                     contentDescription = if (isEditMode) "Done editing" else "Edit items",
-                    tint = if (isEditMode) GreenPrimary else NeutralGray,
+                    tint = when {
+                        isEditMode && editButtonFlash -> Color(0xFFE57310)
+                        isEditMode -> GreenPrimary
+                        else -> NeutralGray
+                    },
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -175,8 +222,16 @@ fun TodayScreen(
             text = DateUtils.todayDisplay(),
             style = MaterialTheme.typography.bodyMedium,
             color = NeutralGray,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = if (isEditMode) 4.dp else 16.dp)
         )
+        AnimatedVisibility(visible = isEditMode) {
+            Text(
+                text = "Drag to reorder, uncheck, or delete items",
+                style = MaterialTheme.typography.bodySmall,
+                color = NeutralGray.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
 
         // Item list
         LazyColumn(
@@ -192,74 +247,72 @@ fun TodayScreen(
                     modifier = Modifier.animateItem()
                 ) { _ ->
                     val confirmation = confirmations.find { it.itemId == item.id }
-                    Box(
-                        modifier = Modifier
-                            .longPressDraggableHandle(
-                                onDragStarted = { isDraggingAny = true },
-                                onDragStopped = {
-                                    coroutineScope.launch {
-                                        viewModel.reorderItems(localItems.toList())
-                                        isDraggingAny = false
-                                    }
+                    ItemCard(
+                        item = item,
+                        confirmation = confirmation,
+                        isExpanded = expandedItemId == item.id,
+                        isEditMode = isEditMode,
+                        dragHandleModifier = if (isEditMode) Modifier.draggableHandle(
+                            onDragStarted = { isDraggingAny = true },
+                            onDragStopped = {
+                                coroutineScope.launch {
+                                    viewModel.reorderItems(localItems.toList())
+                                    isDraggingAny = false
                                 }
-                            )
-                    ) {
-                        ItemCard(
-                            item = item,
-                            confirmation = confirmation,
-                            isExpanded = expandedItemId == item.id,
-                            isEditMode = isEditMode,
-                            onClick = { viewModel.toggleExpand(item.id) },
-                            onConfirm = { viewModel.confirmItem(item.id) },
-                            onConfirmWithPhoto = {
-                                viewModel.collapseAll()
-                                onNavigateToCamera(item.id, item.label)
-                            },
-                            onDelete = { viewModel.deleteItem(item) },
-                            onUncheck = { viewModel.uncheckItem(item.id) },
-                            onViewPhoto = {
-                                val path = confirmation?.photoPath ?: return@ItemCard
-                                onNavigateToPhoto(path, item.label, confirmation.confirmedAt)
                             }
-                        )
-                    }
+                        ) else Modifier,
+                        onClick = { viewModel.toggleExpand(item.id) },
+                        onConfirm = { viewModel.confirmItem(item.id) },
+                        onConfirmWithPhoto = {
+                            viewModel.collapseAll()
+                            onNavigateToCamera(item.id, item.label)
+                        },
+                        onDelete = { viewModel.deleteItem(item) },
+                        onUncheck = { viewModel.uncheckItem(item.id) },
+                        onViewPhoto = {
+                            val path = confirmation?.photoPath ?: return@ItemCard
+                            onNavigateToPhoto(path, item.label, confirmation.confirmedAt)
+                        }
+                    )
                 }
             }
         }
 
-        // Add item input
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = newItemText,
-                onValueChange = { newItemText = it },
-                placeholder = { Text("Add item…") },
+        // Add item input (hidden during edit mode)
+        AnimatedVisibility(visible = !isEditMode) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(addFieldFocus),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { submitNewItem() })
-            )
-            Button(
-                onClick = { submitNewItem() },
-                enabled = newItemText.isNotBlank(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add item",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                OutlinedTextField(
+                    value = newItemText,
+                    onValueChange = { newItemText = it },
+                    placeholder = { Text("Add item…") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(addFieldFocus),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { submitNewItem() })
                 )
+                Button(
+                    onClick = { submitNewItem() },
+                    enabled = newItemText.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add item",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

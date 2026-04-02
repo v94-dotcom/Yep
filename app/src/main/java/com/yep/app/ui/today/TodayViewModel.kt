@@ -7,7 +7,9 @@ import com.yep.app.data.entities.Item
 import com.yep.app.data.repository.YepRepository
 import com.yep.app.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +37,13 @@ class TodayViewModel @Inject constructor(
 
     private val _isEditMode = MutableStateFlow(false)
     val isEditMode: StateFlow<Boolean> = _isEditMode.asStateFlow()
+
+    private val _shakeEditHeader = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val shakeEditHeader: SharedFlow<Unit> = _shakeEditHeader
+
+    fun requestShakeHeader() {
+        _shakeEditHeader.tryEmit(Unit)
+    }
 
     init {
         viewModelScope.launch { seedDefaultsIfNeeded() }

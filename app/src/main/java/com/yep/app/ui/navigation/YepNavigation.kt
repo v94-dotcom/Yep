@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -40,6 +41,7 @@ import com.yep.app.ui.onboarding.OnboardingViewModel
 import com.yep.app.ui.photo.PhotoViewerScreen
 import com.yep.app.ui.streaks.StreaksScreen
 import com.yep.app.ui.today.TodayScreen
+import com.yep.app.ui.today.TodayViewModel
 import com.yep.app.ui.theme.GreenPrimary
 import com.yep.app.ui.theme.NeutralGray
 
@@ -74,6 +76,10 @@ private fun YepApp() {
     val showBottomBar = currentRoute?.startsWith("camera/") != true
             && currentRoute?.startsWith("photo") != true
 
+    val todayEntry = runCatching { navController.getBackStackEntry(Screen.Today.route) }.getOrNull()
+    val todayVm: TodayViewModel? = todayEntry?.let { hiltViewModel(it) }
+    val isTodayEditMode = todayVm?.isEditMode?.collectAsState()?.value ?: false
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -84,12 +90,16 @@ private fun YepApp() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (isTodayEditMode && screen.route != Screen.Today.route) {
+                                    todayVm?.requestShakeHeader()
+                                } else {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = {
@@ -115,7 +125,7 @@ private fun YepApp() {
         NavHost(
             navController = navController,
             startDestination = Screen.Today.route,
-            modifier = if (showBottomBar) Modifier.padding(paddingValues) else Modifier
+            modifier = if (showBottomBar) Modifier.padding(paddingValues).consumeWindowInsets(paddingValues) else Modifier
         ) {
             composable(Screen.Today.route) {
                 TodayScreen(
@@ -131,7 +141,17 @@ private fun YepApp() {
                     }
                 )
             }
-            composable(Screen.History.route) { HistoryScreen() }
+            composable(Screen.History.route) {
+                HistoryScreen(
+                    onNavigateToPhoto = { photoPath, itemLabel, confirmedAt ->
+                        navController.navigate(
+                            "photo?photoPath=${Uri.encode(photoPath)}" +
+                                    "&itemLabel=${Uri.encode(itemLabel)}" +
+                                    "&confirmedAt=$confirmedAt"
+                        )
+                    }
+                )
+            }
             composable(Screen.Streaks.route) { StreaksScreen() }
             composable(
                 route = CAMERA_ROUTE,
