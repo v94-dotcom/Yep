@@ -76,7 +76,8 @@ fun ItemCard(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val isConfirmed = confirmation != null
-    val hasPhoto = confirmation?.photoPath != null
+    val hasPhoto = !confirmation?.photoPaths.isNullOrEmpty()
+    val photoCount = confirmation?.photoPaths?.size ?: 0
     val cardShape = RoundedCornerShape(16.dp)
 
     val checkScale by animateFloatAsState(
@@ -165,7 +166,7 @@ fun ItemCard(
                                 color = GreenPrimary.copy(alpha = 0.15f)
                             ) {
                                 Text(
-                                    text = "photo",
+                                    text = if (photoCount == 1) "photo" else "$photoCount photos",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = confirmedSubtextColor,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

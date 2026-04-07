@@ -22,18 +22,21 @@ class CameraViewModel @Inject constructor(
     private val repository: YepRepository
 ) : ViewModel() {
 
-    enum class State { IDLE, CAPTURING, DONE }
+    enum class State { IDLE, CAPTURING, READY, DONE }
 
     private val _state = MutableStateFlow(State.IDLE)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    fun captureAndConfirm(
+    private val _capturedPaths = MutableStateFlow<List<String>>(emptyList())
+    val capturedPaths: StateFlow<List<String>> = _capturedPaths.asStateFlow()
+
+    fun capturePhoto(
         context: Context,
         imageCapture: ImageCapture,
         itemId: String,
         executor: Executor
     ) {
-        if (_state.value != State.IDLE) return
+        if (_state.value != State.IDLE && _state.value != State.READY) return
         _state.value = State.CAPTURING
 
         val file = PhotoManager.newPhotoFile(context, itemId)
@@ -41,23 +44,28 @@ class CameraViewModel @Inject constructor(
 
         imageCapture.takePicture(opts, executor, object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                viewModelScope.launch {
-                    repository.insertConfirmation(
-                        Confirmation(
-                            itemId = itemId,
-                            date = DateUtils.today(),
-                            confirmedAt = System.currentTimeMillis(),
-                            photoPath = file.absolutePath
-                        )
-                    )
-                    _state.value = State.DONE
-                }
+                _capturedPaths.value = _capturedPaths.value + file.absolutePath
+                _state.value = State.READY
             }
 
             override fun onError(e: ImageCaptureException) {
-                _state.value = State.IDLE
+                _state.value = if (_capturedPaths.value.isEmpty()) State.IDLE else State.READY
             }
         })
+    }
+
+    fun finishWithPhotos(itemId: String) {
+        viewModelScope.launch {
+            repository.insertConfirmation(
+                Confirmation(
+                    itemId = itemId,
+                    date = DateUtils.today(),
+                    confirmedAt = System.currentTimeMillis(),
+                    photoPaths = _capturedPaths.value.ifEmpty { null }
+                )
+            )
+            _state.value = State.DONE
+        }
     }
 
     fun skipPhoto(itemId: String) {
@@ -67,7 +75,7 @@ class CameraViewModel @Inject constructor(
                     itemId = itemId,
                     date = DateUtils.today(),
                     confirmedAt = System.currentTimeMillis(),
-                    photoPath = null
+                    photoPaths = null
                 )
             )
             _state.value = State.DONE

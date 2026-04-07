@@ -23,5 +23,5 @@ data class Confirmation(
     val itemId: String,
     val date: String,       // "2026-04-02"
     val confirmedAt: Long,
-    val photoPath: String?  // local file path or null
+    val photoPaths: List<String>?  // local file paths or null
 )

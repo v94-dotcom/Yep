@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,12 +39,14 @@ import java.io.File
 
 @Composable
 fun PhotoViewerScreen(
-    photoPath: String,
+    photoPaths: List<String>,
     itemLabel: String,
     confirmedAt: Long,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val pagerState = rememberPagerState(pageCount = { photoPaths.size })
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -77,37 +81,65 @@ fun PhotoViewerScreen(
             )
         }
 
-        // Photo with timestamp overlay
-        Box(
+        // Photo pager
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.82f)
-                .padding(horizontal = 16.dp)
                 .padding(top = 80.dp, bottom = 16.dp)
                 .align(Alignment.TopCenter)
-        ) {
-            AsyncImage(
-                model = File(photoPath),
-                contentDescription = "Photo proof for $itemLabel",
-                contentScale = ContentScale.Fit,
+        ) { page ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-            )
-            // Timestamp badge overlay (bottom-right of photo)
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = Color.Black.copy(alpha = 0.55f),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(
-                    text = DateUtils.formatTime(context, confirmedAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                AsyncImage(
+                    model = File(photoPaths[page]),
+                    contentDescription = "Photo proof for $itemLabel",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp))
                 )
+                // Timestamp badge overlay (bottom-right of photo)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Black.copy(alpha = 0.55f),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = DateUtils.formatTime(context, confirmedAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+
+        // Page indicator dots (only for multiple photos)
+        if (photoPaths.size > 1) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                repeat(photoPaths.size) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == pagerState.currentPage) Color.White
+                                else Color.White.copy(alpha = 0.4f)
+                            )
+                    )
+                }
             }
         }
 

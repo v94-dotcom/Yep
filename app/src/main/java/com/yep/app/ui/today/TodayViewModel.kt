@@ -83,14 +83,14 @@ class TodayViewModel @Inject constructor(
         viewModelScope.launch { repository.removeConfirmation(itemId, today) }
     }
 
-    fun confirmItem(itemId: String, photoPath: String? = null) {
+    fun confirmItem(itemId: String, photoPaths: List<String>? = null) {
         viewModelScope.launch {
             repository.insertConfirmation(
                 Confirmation(
                     itemId = itemId,
                     date = today,
                     confirmedAt = System.currentTimeMillis(),
-                    photoPath = photoPath
+                    photoPaths = photoPaths
                 )
             )
             _expandedItemId.value = null

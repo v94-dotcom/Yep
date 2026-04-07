@@ -55,7 +55,7 @@ import com.yep.app.util.DateUtils
 
 @Composable
 fun HistoryScreen(
-    onNavigateToPhoto: (photoPath: String, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
+    onNavigateToPhoto: (photoPaths: List<String>, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val items by viewModel.items.collectAsState()
@@ -143,7 +143,7 @@ private fun HistoryDayCard(
     day: HistoryDay,
     isExpanded: Boolean,
     onToggle: () -> Unit,
-    onViewPhoto: (photoPath: String, itemLabel: String, confirmedAt: Long) -> Unit
+    onViewPhoto: (photoPaths: List<String>, itemLabel: String, confirmedAt: Long) -> Unit
 ) {
     val confirmedCount = day.confirmedItemIds.size
     val total = day.totalItems
@@ -231,8 +231,8 @@ private fun HistoryDayCard(
                             HistoryItemRow(
                                 itemLabel = snapshotItem.itemLabel,
                                 confirmation = day.confirmations[snapshotItem.itemId],
-                                onViewPhoto = { path, confirmedAt ->
-                                    onViewPhoto(path, snapshotItem.itemLabel, confirmedAt)
+                                onViewPhoto = { paths, confirmedAt ->
+                                    onViewPhoto(paths, snapshotItem.itemLabel, confirmedAt)
                                 }
                             )
                         }
@@ -247,10 +247,11 @@ private fun HistoryDayCard(
 private fun HistoryItemRow(
     itemLabel: String,
     confirmation: Confirmation?,
-    onViewPhoto: (photoPath: String, confirmedAt: Long) -> Unit
+    onViewPhoto: (photoPaths: List<String>, confirmedAt: Long) -> Unit
 ) {
     val context = LocalContext.current
-    val hasPhoto = confirmation?.photoPath != null
+    val hasPhoto = !confirmation?.photoPaths.isNullOrEmpty()
+    val photoCount = confirmation?.photoPaths?.size ?: 0
 
     Row(
         modifier = Modifier
@@ -260,7 +261,7 @@ private fun HistoryItemRow(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                onViewPhoto(confirmation!!.photoPath!!, confirmation.confirmedAt)
+                onViewPhoto(confirmation!!.photoPaths!!, confirmation.confirmedAt)
             } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -285,7 +286,7 @@ private fun HistoryItemRow(
                 shape = RoundedCornerShape(8.dp),
                 color = GreenPrimary.copy(alpha = 0.12f),
                 modifier = Modifier.clickable {
-                    onViewPhoto(confirmation!!.photoPath!!, confirmation.confirmedAt)
+                    onViewPhoto(confirmation!!.photoPaths!!, confirmation.confirmedAt)
                 }
             ) {
                 Row(
@@ -300,7 +301,7 @@ private fun HistoryItemRow(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "photo",
+                        text = if (photoCount == 1) "photo" else "$photoCount photos",
                         style = MaterialTheme.typography.labelSmall,
                         color = GreenPrimary
                     )

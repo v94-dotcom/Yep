@@ -75,7 +75,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun TodayScreen(
     onNavigateToCamera: (itemId: String, itemLabel: String) -> Unit = { _, _ -> },
-    onNavigateToPhoto: (photoPath: String, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
+    onNavigateToPhoto: (photoPaths: List<String>, itemLabel: String, confirmedAt: Long) -> Unit = { _, _, _ -> },
     viewModel: TodayViewModel = hiltViewModel()
 ) {
     val items by viewModel.items.collectAsState()
@@ -270,8 +270,8 @@ fun TodayScreen(
                         onDelete = { viewModel.deleteItem(item) },
                         onUncheck = { viewModel.uncheckItem(item.id) },
                         onViewPhoto = {
-                            val path = confirmation?.photoPath ?: return@ItemCard
-                            onNavigateToPhoto(path, item.label, confirmation.confirmedAt)
+                            val paths = confirmation?.photoPaths ?: return@ItemCard
+                            onNavigateToPhoto(paths, item.label, confirmation.confirmedAt)
                         }
                     )
                 }

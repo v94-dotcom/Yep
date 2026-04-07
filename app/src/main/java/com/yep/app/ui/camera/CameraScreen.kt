@@ -22,9 +22,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -68,6 +70,7 @@ fun CameraScreen(
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val captureState by viewModel.state.collectAsState()
+    val capturedPaths by viewModel.capturedPaths.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(captureState) {
@@ -88,16 +91,18 @@ fun CameraScreen(
         CameraContent(
             itemLabel = itemLabel,
             isCapturing = captureState == CameraViewModel.State.CAPTURING,
+            photoCount = capturedPaths.size,
             onClose = onNavigateBack,
             onCapture = { imageCapture ->
-                viewModel.captureAndConfirm(
+                viewModel.capturePhoto(
                     context = context,
                     imageCapture = imageCapture,
                     itemId = itemId,
                     executor = ContextCompat.getMainExecutor(context)
                 )
             },
-            onSkip = { viewModel.skipPhoto(itemId) }
+            onSkip = { viewModel.skipPhoto(itemId) },
+            onDone = { viewModel.finishWithPhotos(itemId) }
         )
     } else {
         PermissionContent(
@@ -112,9 +117,11 @@ fun CameraScreen(
 private fun CameraContent(
     itemLabel: String,
     isCapturing: Boolean,
+    photoCount: Int,
     onClose: () -> Unit,
     onCapture: (ImageCapture) -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    onDone: () -> Unit
 ) {
     val imageCapture = remember { ImageCapture.Builder().build() }
     var flashVisible by remember { mutableStateOf(false) }
@@ -199,18 +206,65 @@ private fun CameraContent(
                 .padding(bottom = 48.dp)
                 .align(Alignment.BottomCenter)
         ) {
-            // Skip (left)
-            TextButton(
-                onClick = onSkip,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 24.dp)
-            ) {
-                Text(
-                    text = "Skip",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
+            if (photoCount == 0) {
+                // Skip (left)
+                TextButton(
+                    onClick = onSkip,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 24.dp)
+                ) {
+                    Text(
+                        text = "Skip",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                }
+            } else {
+                // Photo count badge (left)
+                Surface(
+                    shape = RoundedCornerShape(99.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "$photoCount",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // Done button (right)
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 24.dp),
+                    shape = RoundedCornerShape(99.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Done",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
 
             // Shutter button (center)

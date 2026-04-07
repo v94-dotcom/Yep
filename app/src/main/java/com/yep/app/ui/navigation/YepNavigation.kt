@@ -45,6 +45,7 @@ import com.yep.app.ui.today.TodayScreen
 import com.yep.app.ui.today.TodayViewModel
 import com.yep.app.ui.theme.GreenPrimary
 import com.yep.app.ui.theme.NeutralGray
+import org.json.JSONArray
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Today : Screen("today", "Today", Icons.Filled.CheckCircle)
@@ -55,7 +56,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 val bottomNavItems = listOf(Screen.Today, Screen.History, Screen.Streaks)
 
 private const val CAMERA_ROUTE = "camera/{itemId}/{itemLabel}"
-private const val PHOTO_ROUTE = "photo?photoPath={photoPath}&itemLabel={itemLabel}&confirmedAt={confirmedAt}"
+private const val PHOTO_ROUTE = "photo?photoPaths={photoPaths}&itemLabel={itemLabel}&confirmedAt={confirmedAt}"
 
 @Composable
 fun YepNavigation() {
@@ -133,9 +134,10 @@ private fun YepApp() {
                     onNavigateToCamera = { itemId, itemLabel ->
                         navController.navigate("camera/$itemId/${Uri.encode(itemLabel)}")
                     },
-                    onNavigateToPhoto = { photoPath, itemLabel, confirmedAt ->
+                    onNavigateToPhoto = { photoPaths, itemLabel, confirmedAt ->
+                        val json = JSONArray(photoPaths).toString()
                         navController.navigate(
-                            "photo?photoPath=${Uri.encode(photoPath)}" +
+                            "photo?photoPaths=${Uri.encode(json)}" +
                                     "&itemLabel=${Uri.encode(itemLabel)}" +
                                     "&confirmedAt=$confirmedAt"
                         )
@@ -144,9 +146,10 @@ private fun YepApp() {
             }
             composable(Screen.History.route) {
                 HistoryScreen(
-                    onNavigateToPhoto = { photoPath, itemLabel, confirmedAt ->
+                    onNavigateToPhoto = { photoPaths, itemLabel, confirmedAt ->
+                        val json = JSONArray(photoPaths).toString()
                         navController.navigate(
-                            "photo?photoPath=${Uri.encode(photoPath)}" +
+                            "photo?photoPaths=${Uri.encode(json)}" +
                                     "&itemLabel=${Uri.encode(itemLabel)}" +
                                     "&confirmedAt=$confirmedAt"
                         )
@@ -172,20 +175,23 @@ private fun YepApp() {
             composable(
                 route = PHOTO_ROUTE,
                 arguments = listOf(
-                    navArgument("photoPath") { type = NavType.StringType },
+                    navArgument("photoPaths") { type = NavType.StringType },
                     navArgument("itemLabel") { type = NavType.StringType },
                     navArgument("confirmedAt") { type = NavType.LongType }
                 )
             ) { backStackEntry ->
-                val photoPath = backStackEntry.arguments?.getString("photoPath")
+                val photoPathsJson = backStackEntry.arguments?.getString("photoPaths")
                     ?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
                     ?: return@composable
+                val photoPaths = JSONArray(photoPathsJson).let { arr ->
+                    (0 until arr.length()).map { arr.getString(it) }
+                }
                 val itemLabel = backStackEntry.arguments?.getString("itemLabel")
                     ?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
                     ?: return@composable
                 val confirmedAt = backStackEntry.arguments?.getLong("confirmedAt") ?: 0L
                 PhotoViewerScreen(
-                    photoPath = photoPath,
+                    photoPaths = photoPaths,
                     itemLabel = itemLabel,
                     confirmedAt = confirmedAt,
                     onNavigateBack = { navController.popBackStack() }
