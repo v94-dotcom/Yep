@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -82,9 +83,10 @@ private fun YepApp() {
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
                 val currentDestination = navBackStackEntry?.destination
-                NavigationBar {
+                NavigationBar(
+                    modifier = Modifier.graphicsLayer { alpha = if (showBottomBar) 1f else 0f }
+                ) {
                     bottomNavItems.forEach { screen ->
                         val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                         NavigationBarItem(
@@ -119,13 +121,12 @@ private fun YepApp() {
                         )
                     }
                 }
-            }
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = Screen.Today.route,
-            modifier = if (showBottomBar) Modifier.padding(paddingValues).consumeWindowInsets(paddingValues) else Modifier
+            modifier = Modifier.padding(paddingValues).consumeWindowInsets(paddingValues)
         ) {
             composable(Screen.Today.route) {
                 TodayScreen(

@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +64,7 @@ fun HistoryScreen(
     val todayDay = historyDays.firstOrNull()
     val pastDays = if (historyDays.size > 1) historyDays.drop(1) else emptyList()
 
-    var expandedDate by remember { mutableStateOf<String?>(null) }
+    var expandedDate by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -87,7 +89,7 @@ fun HistoryScreen(
                 }
             }
 
-            items(pastDays.filter { it.totalItems > 0 || it.confirmedItemIds.isNotEmpty() }) { day ->
+            items(pastDays.filter { it.confirmedItemIds.isNotEmpty() }) { day ->
                 val isExpanded = expandedDate == day.date
                 HistoryDayCard(
                     day = day,
@@ -155,7 +157,6 @@ private fun HistoryDayCard(
     )
 
     Surface(
-        onClick = if (canExpand) onToggle else { {} },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
@@ -164,7 +165,9 @@ private fun HistoryDayCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (canExpand) Modifier.clickable { onToggle() } else Modifier),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -252,7 +255,13 @@ private fun HistoryItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .then(if (hasPhoto) Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                onViewPhoto(confirmation!!.photoPath!!, confirmation.confirmedAt)
+            } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
